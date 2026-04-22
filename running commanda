@@ -1,0 +1,87 @@
+═══════════════════════════════════════════════════════════
+  DIETORA — Complete Run Commands
+  FYP Project, UAF Faisalabad 2024-2025
+═══════════════════════════════════════════════════════════
+
+PREREQUISITES:
+  - Node.js v18+ (https://nodejs.org)
+  - MongoDB (local mongod running) OR MongoDB Atlas URI in .env
+  - Two terminal windows open
+
+──────────────────────────────────────────────────────────
+ TERMINAL 1 — BACKEND (Port 5000)
+──────────────────────────────────────────────────────────
+
+cd C:\Users\dell\Desktop\FYP\dietora-backend
+
+# First time only:
+npm install
+npm run seed           (seeds 35 Pakistani foods)
+npm run seed:admin     (creates admin@dietora.pk account)
+
+# Every time:
+npm run dev
+
+✅ Backend: http://localhost:5000
+✅ Health: http://localhost:5000/health
+
+
+──────────────────────────────────────────────────────────
+ TERMINAL 2 — FRONTEND (Port 5173)
+──────────────────────────────────────────────────────────
+
+cd C:\Users\dell\Desktop\FYP\dietora-frontend
+
+# First time only:
+npm install
+
+# Every time:
+npm run dev
+
+✅ App: http://localhost:5173
+
+
+──────────────────────────────────────────────────────────
+ DEFAULT LOGIN CREDENTIALS
+──────────────────────────────────────────────────────────
+
+  Admin:  admin@dietora.pk  /  Admin@12345
+  User:   Register any new account at /register
+
+
+──────────────────────────────────────────────────────────
+ FIRST-TIME USAGE FLOW
+──────────────────────────────────────────────────────────
+
+1. Open http://localhost:5173
+2. Click "Get Started" → Register a new account
+3. Go to Health Profile (/profile) → Fill in your info → Save
+4. Go to Meal Planner (/meal-plan) → Click "Generate New Plan"
+5. Go to Grocery List (/grocery) → See your shopping list
+6. Go to Progress (/progress) → See your charts
+7. Click 🤖 button (bottom right) → Chat with nutrition assistant
+
+
+──────────────────────────────────────────────────────────
+ PRODUCTION BUILD
+──────────────────────────────────────────────────────────
+
+Frontend:
+  cd dietora-frontend
+  npm run build
+  npm run preview     (preview production build locally)
+
+Backend:
+  cd dietora-backend
+  set NODE_ENV=production
+  npm start
+
+
+──────────────────────────────────────────────────────────
+ USEFUL API TEST (Postman / browser)
+──────────────────────────────────────────────────────────
+
+GET  http://localhost:5000/health
+POST http://localhost:5000/api/v1/auth/login
+     Body: { "email": "admin@dietora.pk", "password": "Admin@12345" }
+

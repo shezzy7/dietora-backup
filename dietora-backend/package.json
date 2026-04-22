@@ -1,0 +1,35 @@
+{
+  "name": "dietora-backend",
+  "version": "2.0.0",
+  "description": "DIETORA - AI-powered Diet Planning Backend (FYP)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/seeders/foodSeeder.js",
+    "seed:admin": "node src/seeders/adminSeeder.js",
+    "seed:all": "npm run seed && npm run seed:admin"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "zod": "^3.22.4",
+    "@google/generative-ai": "^0.21.0",
+    "google-auth-library": "^9.14.1",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["dietora", "diet", "nutrition", "fyp", "nodejs", "google-oauth"],
+  "author": "DIETORA Team",
+  "license": "ISC"
+}
