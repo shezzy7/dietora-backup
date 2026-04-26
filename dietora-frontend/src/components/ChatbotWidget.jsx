@@ -8,12 +8,10 @@ import { useLocation } from '../hooks/useLocation'
 import api from '../services/api'
 
 // ─── Minimal markdown renderer ────────────────────────────
-// Handles: **bold**, *italic*, [text](url), bullet lists, line breaks
 function MarkdownText({ text }) {
   if (!text) return null
 
   const renderLine = (line, i) => {
-    // Bullet list
     if (line.startsWith('- ') || line.startsWith('• ')) {
       return (
         <li key={i} className="ml-4 list-disc">
@@ -21,7 +19,6 @@ function MarkdownText({ text }) {
         </li>
       )
     }
-    // Numbered list
     if (/^\d+\.\s/.test(line)) {
       return (
         <li key={i} className="ml-4 list-decimal">
@@ -29,7 +26,6 @@ function MarkdownText({ text }) {
         </li>
       )
     }
-    // Heading ## or **heading**
     if (line.startsWith('## ')) {
       return <p key={i} className="font-bold text-emerald-700 dark:text-emerald-400 mt-2">{line.replace('## ', '')}</p>
     }
@@ -42,13 +38,11 @@ function MarkdownText({ text }) {
 }
 
 function InlineMarkdown({ text }) {
-  // Process: **bold**, *italic*, [text](url), `code`
   const parts = []
   let remaining = text
   let key = 0
 
   while (remaining.length > 0) {
-    // Links [text](url)
     const linkMatch = remaining.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/)
     if (linkMatch) {
       const before = remaining.slice(0, linkMatch.index)
@@ -62,7 +56,6 @@ function InlineMarkdown({ text }) {
       remaining = remaining.slice(linkMatch.index + linkMatch[0].length)
       continue
     }
-    // Bold **text**
     const boldMatch = remaining.match(/\*\*([^*]+)\*\*/)
     if (boldMatch) {
       const before = remaining.slice(0, boldMatch.index)
@@ -71,7 +64,6 @@ function InlineMarkdown({ text }) {
       remaining = remaining.slice(boldMatch.index + boldMatch[0].length)
       continue
     }
-    // Italic *text*
     const italicMatch = remaining.match(/\*([^*]+)\*/)
     if (italicMatch) {
       const before = remaining.slice(0, italicMatch.index)
@@ -160,7 +152,6 @@ function MessageBubble({ msg, onSuggestion, onEnableLocation }) {
       )}
 
       <div className="max-w-[84%] space-y-2">
-        {/* Text bubble */}
         <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
           isUser
             ? 'bg-emerald-600 text-white rounded-br-sm'
@@ -172,7 +163,6 @@ function MessageBubble({ msg, onSuggestion, onEnableLocation }) {
           }
         </div>
 
-        {/* Real Google Maps store cards */}
         {msg.stores?.length > 0 && (
           <div className="space-y-1.5">
             {msg.stores.map((store, i) => (
@@ -181,7 +171,6 @@ function MessageBubble({ msg, onSuggestion, onEnableLocation }) {
           </div>
         )}
 
-        {/* Location required CTA */}
         {msg.requiresLocation && (
           <button
             onClick={onEnableLocation}
@@ -191,7 +180,6 @@ function MessageBubble({ msg, onSuggestion, onEnableLocation }) {
           </button>
         )}
 
-        {/* Suggestion chips */}
         {!isUser && msg.suggestions?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             {msg.suggestions.map((s) => (
@@ -206,7 +194,6 @@ function MessageBubble({ msg, onSuggestion, onEnableLocation }) {
           </div>
         )}
 
-        {/* Timestamp */}
         {msg.timestamp && (
           <p className={`text-xs text-slate-400 ${isUser ? 'text-right' : 'text-left'}`}>
             {new Date(msg.timestamp).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}
@@ -236,6 +223,15 @@ function TypingIndicator() {
 }
 
 // ─── Main Widget ──────────────────────────────────────────
+// Navbar height = h-16 = 64px (z-50)
+// Floating button: bottom-6, h-14 = 56px → button top = viewport - 24 - 56 = viewport - 80px
+// Chat window: bottom = 24 + 56 + 8 = 88px (bottom-[88px])
+// Max height = viewport - navbar(64) - bottom(88) - gap(16) = viewport - 168px
+const NAVBAR_H = 64   // px  (h-16)
+const BTN_BOTTOM = 24  // px  (bottom-6)
+const BTN_H = 56       // px  (h-14)
+const GAP = 8          // px  gap between button and chat window
+
 export default function ChatbotWidget() {
   const dispatch = useDispatch()
   const { open } = useSelector((s) => s.chatbot)
@@ -279,7 +275,6 @@ export default function ChatbotWidget() {
       const res = await api.post('/chatbot', { message: trimmed })
       const data = res.data.data
 
-      // If store search but no GPS → show location prompt
       const needsLocation = trimmed.toLowerCase().match(/where|kahan|buy|store|near/) && !hasConsent
 
       setMessages((prev) => [...prev, {
@@ -331,12 +326,16 @@ export default function ChatbotWidget() {
     '💰 Budget meal ideas',
   ]
 
+  // Chat window bottom position = button bottom + button height + gap
+  const chatBottom = BTN_BOTTOM + BTN_H + GAP  // 88px
+
   return (
     <>
       {/* Floating Button */}
       <button
         onClick={() => dispatch(toggleChatbot())}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 active:scale-95"
+        className="fixed z-[150] w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 active:scale-95"
+        style={{ bottom: `${BTN_BOTTOM}px`, right: '24px' }}
         title="DIETORA AI Assistant (Gemini)"
       >
         {open ? '✕' : '🤖'}
@@ -345,8 +344,13 @@ export default function ChatbotWidget() {
       {/* Chat Window */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-[22rem] sm:w-[26rem] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl shadow-black/20 border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden"
-          style={{ height: '560px' }}
+          className="fixed right-6 z-[149] w-[22rem] sm:w-[26rem] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl shadow-black/20 border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden"
+          style={{
+            bottom: `${chatBottom}px`,
+            // Max height: screen - navbar - chatBottom - small margin
+            maxHeight: `calc(100vh - ${NAVBAR_H + chatBottom + 16}px)`,
+            height: '560px',
+          }}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 flex items-center justify-between flex-shrink-0">

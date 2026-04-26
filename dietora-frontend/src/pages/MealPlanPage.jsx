@@ -22,7 +22,7 @@ import {
 import { Link } from 'react-router-dom'
 import WeeklyCheckIn from '../components/onboarding/WeeklyCheckIn'
 import RecipeModal from '../components/meal/RecipeModal'
-import { Sunrise, Sun, Moon, Apple, Globe, Bot, BarChart2, Shuffle, ChefHat, CalendarDays, Loader2, Hospital, Activity, HeartPulse, Droplets, CheckCircle2, Heart, Pill, Fingerprint, AlertTriangle, Flame, Coins, ShoppingCart, Check, CheckSquare, Utensils, FileText } from 'lucide-react'
+import { Sunrise, Sun, Moon, Apple, Globe, Bot, BarChart2, Shuffle, ChefHat, CalendarDays, Loader2, Hospital, Activity, HeartPulse, Droplets, CheckCircle2, Heart, Pill, Fingerprint, AlertTriangle, Flame, Coins, ShoppingCart, Check, CheckSquare, Utensils, FileText, Lock } from 'lucide-react'
 
 const MEAL_ICONS  = { breakfast: Sunrise, lunch: Sun, dinner: Moon, snack: Apple }
 const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' }
@@ -105,14 +105,29 @@ function MealSwapModal({ isOpen, onClose, day, mealType, planId }) {
   )
 }
 
+// ─── Helper: kya yeh day future mein hai? ────────────────
+// date string leke aaj ki date se compare karta hai
+// Returns true if dayDate > today (future)
+function isFutureDay(dateStr) {
+  if (!dateStr) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dayDate = new Date(dateStr)
+  dayDate.setHours(0, 0, 0, 0)
+  return dayDate.getTime() > today.getTime()
+}
+
 // ─── Meal Check-off Card ──────────────────────────────────
-function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggling, onSwapClick, onRecipeClick }) {
+function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggling, onSwapClick, onRecipeClick, dayDate }) {
   const dispatch   = useDispatch()
   const mealDone   = dayProgress?.meals?.find((m) => m.mealType === mealType)?.completed || false
   const isToggling = toggling === `${dayNum}-${mealType}`
 
+  // Future day check — future k meals mark as done nahi ho sakte
+  const isFuture = isFutureDay(dayDate)
+
   const handleToggle = () => {
-    if (!progressId) return
+    if (!progressId || isFuture) return
     dispatch(toggleMeal({ progressId, day: dayNum, mealType, completed: !mealDone }))
   }
 
@@ -133,7 +148,7 @@ function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggli
   return (
     <div className={`meal-card relative transition-all duration-300 ${
       mealDone ? 'border-emerald-300 bg-emerald-50/80 dark:bg-emerald-900/20' : 'hover:-translate-y-1 hover:shadow-xl'
-    }`}>
+    } ${isFuture ? 'opacity-80' : ''}`}>
       {mealDone && (
         <div className="absolute -top-2 -right-2 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center z-10 shadow-lg shadow-emerald-500/30">
           <CheckCircle2 className="w-4 h-4 text-white" />
@@ -148,7 +163,7 @@ function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggli
             {MEAL_LABELS[mealType]}
           </span>
         </div>
-        {!mealDone && progressId && (
+        {!mealDone && progressId && !isFuture && (
           <button onClick={() => onSwapClick(mealType)} title="Find alternatives" className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-900/50 px-2.5 py-1 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors">
             <Shuffle className="w-3 h-3" /> Swap
           </button>
@@ -156,14 +171,19 @@ function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggli
       </div>
 
       {/* Food name */}
-      <h4 onClick={() => onRecipeClick(meal)} className={`font-display font-bold text-base mb-1 leading-snug cursor-pointer group transition-colors ${
-        mealDone ? 'text-emerald-700 dark:text-emerald-400 line-through opacity-80' : 'text-slate-800 dark:text-white hover:text-emerald-600'
-      }`}>
-        {meal.name}
-        <span className="text-[10px] ml-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full inline-flex items-center gap-1 align-middle group-hover:bg-emerald-100 group-hover:text-emerald-700 transition-colors">
-          <ChefHat className="w-3 h-3" /> Recipe
-        </span>
-      </h4>
+      <div className="mb-1">
+        <h4 className={`font-display font-bold text-base leading-snug transition-colors ${
+          mealDone ? 'text-emerald-700 dark:text-emerald-400 line-through opacity-80' : 'text-slate-800 dark:text-white'
+        }`}>
+          {meal.name}
+        </h4>
+        <button
+          onClick={() => onRecipeClick(meal)}
+          className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
+        >
+          <ChefHat className="w-3 h-3" /> View Recipe
+        </button>
+      </div>
       {meal.category && (
         <p className="text-xs text-slate-400 mb-4 capitalize">{meal.category}</p>
       )}
@@ -178,7 +198,6 @@ function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggli
           <p className="text-xs font-bold text-blue-600">{meal.protein}g</p>
           <p className="text-[10px] text-slate-400">protein</p>
         </div>
-        {/* Price cell — shows source icon next to price */}
         <div className="text-center bg-amber-50 dark:bg-amber-900/20 rounded-lg py-1.5">
           <p className="text-xs font-bold text-amber-600 flex items-center justify-center gap-0.5">
             ₨{meal.price}
@@ -199,22 +218,29 @@ function MealCheckCard({ mealType, meal, dayNum, progressId, dayProgress, toggli
         </div>
       )}
 
-      {/* Check-off button */}
+      {/* Check-off button — future days par locked */}
       {progressId && (
-        <button
-          onClick={handleToggle}
-          disabled={isToggling}
-          className={`w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
-            mealDone
-              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-700'
-          }`}
-        >
-          {isToggling
-            ? <Loader2 className="w-4 h-4 animate-spin" />
-            : mealDone ? <><Check className="w-4 h-4" /> Done — Tap to undo</> : <><CheckSquare className="w-4 h-4" /> Mark as Done</>
-          }
-        </button>
+        isFuture ? (
+          // Future day — sirf dekh sakte hain, mark nahi kar sakte
+          <div className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-700/60 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-dashed border-slate-300 dark:border-slate-600">
+            <Lock className="w-3.5 h-3.5" /> Available on {new Date(dayDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </div>
+        ) : (
+          <button
+            onClick={handleToggle}
+            disabled={isToggling}
+            className={`w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
+              mealDone
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-700'
+            }`}
+          >
+            {isToggling
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : mealDone ? <><Check className="w-4 h-4" /> Done — Tap to undo</> : <><CheckSquare className="w-4 h-4" /> Mark as Done</>
+            }
+          </button>
+        )
       )}
     </div>
   )
@@ -235,6 +261,9 @@ function DayNutritionSummary({ day, dayProgress }) {
   const totalMeals     = dayProgress?.meals?.length || 4
   const pct            = Math.round((completedMeals / totalMeals) * 100)
 
+  // Future day badge
+  const future = isFutureDay(day.date)
+
   return (
     <div className="card bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-100 dark:border-emerald-800">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -246,13 +275,20 @@ function DayNutritionSummary({ day, dayProgress }) {
             </span>
           )}
           {' '}— Daily Summary
+          {future && (
+            <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full">
+              <Lock className="w-3 h-3" /> Upcoming
+            </span>
+          )}
         </h3>
-        <div className="flex items-center gap-2">
-          <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+        {!future && (
+          <div className="flex items-center gap-2">
+            <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs font-semibold text-emerald-600">{completedMeals}/{totalMeals} done</span>
           </div>
-          <span className="text-xs font-semibold text-emerald-600">{completedMeals}/{totalMeals} done</span>
-        </div>
+        )}
       </div>
       <div className="grid grid-cols-5 gap-2">
         {[
@@ -391,9 +427,29 @@ export default function MealPlanPage() {
     if (current?._id) dispatch(fetchCurrentProgress())
   }, [current?._id, dispatch])
 
-  const activePlan          = current || list?.[0]
+  // ── Bug Fix 1: Auto-select current day on plan load ───────
+  // Jab bhi active plan change ho (naya plan load ho ya login ke baad),
+  // plan ke days mein aaj ki date dhundo aur us par auto-jump karo.
+  // Agar aaj ka din plan mein nahi hai (e.g. plan expire ho gaya) toh pehla day.
+  const activePlan = current || list?.[0]
+  useEffect(() => {
+    if (!activePlan?.days?.length) return
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayIdx = activePlan.days.findIndex((d) => {
+      if (!d.date) return false
+      const dayDate = new Date(d.date)
+      dayDate.setHours(0, 0, 0, 0)
+      return dayDate.getTime() === today.getTime()
+    })
+    // Match mila → aaj ka din select karo
+    // Match nahi mila → pehla din (index 0) select karo
+    dispatch(setSelectedDay(todayIdx !== -1 ? todayIdx : 0))
+  }, [activePlan?._id]) // Sirf jab plan change ho — user ki manual selection override na ho dobara
+
   const activeProgress      = (progress?.mealPlan === activePlan?._id || progress?.mealPlan?._id === activePlan?._id) ? progress : null
   const selectedDayProgress = activeProgress?.days?.find((d) => d.day === selectedDay + 1)
+  const selectedDayDate     = activePlan?.days?.[selectedDay]?.date || null
 
   const handleGenerate = () => {
     const params = {}
@@ -556,6 +612,7 @@ export default function MealPlanPage() {
               const done    = dp?.meals?.filter((m) => m.completed).length || 0
               const total   = dp?.meals?.length || 4
               const allDone = done === total && total > 0
+              const future  = isFutureDay(dayObj.date)
               return (
                 <button key={i} onClick={() => dispatch(setSelectedDay(i))}
                   className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 snap-start min-w-[80px] ${
@@ -570,9 +627,14 @@ export default function MealPlanPage() {
                       {new Date(dayObj.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}
                     </span>
                   )}
+                  {/* Future days par lock icon, baaki par progress */}
                   {activeProgress && (
-                    <span className={`flex justify-center items-center gap-0.5 text-[10px] mt-0.5 ${allDone ? 'text-emerald-300' : selectedDay === i ? 'text-white/70' : 'text-slate-400'}`}>
-                      {allDone ? <Check className="w-3 h-3" /> : `${done}/${total}`}
+                    <span className={`flex justify-center items-center gap-0.5 text-[10px] mt-0.5 ${
+                      future
+                        ? selectedDay === i ? 'text-white/60' : 'text-slate-300 dark:text-slate-600'
+                        : allDone ? 'text-emerald-300' : selectedDay === i ? 'text-white/70' : 'text-slate-400'
+                    }`}>
+                      {future ? <Lock className="w-3 h-3" /> : allDone ? <Check className="w-3 h-3" /> : `${done}/${total}`}
                     </span>
                   )}
                 </button>
@@ -592,6 +654,7 @@ export default function MealPlanPage() {
                 meal={activePlan.days?.[selectedDay]?.meals?.[mealType]}
                 dayNum={selectedDay + 1} progressId={activeProgress?._id}
                 dayProgress={selectedDayProgress} toggling={toggling}
+                dayDate={selectedDayDate}
                 onSwapClick={(mt) => setSwapData({ day: selectedDay + 1, mealType: mt, planId: activePlan._id })}
                 onRecipeClick={(meal) => setRecipeData({ foodId: meal.foodId, foodName: meal.name })} />
             ))}

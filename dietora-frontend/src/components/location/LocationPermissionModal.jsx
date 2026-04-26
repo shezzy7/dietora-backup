@@ -29,7 +29,10 @@ export default function LocationPermissionModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    // navbar h-16 = 64px, isliye pt-20 (80px) se start karo
+    // overflow-y-auto + py-4 taake bottom content b visible rahe
+    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/50 backdrop-blur-sm px-4 overflow-y-auto"
+         style={{ paddingTop: 'max(80px, env(safe-area-inset-top, 80px))', paddingBottom: '24px' }}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
 
         {step === 'ask' ? (

@@ -16,41 +16,41 @@ const { z } = require('zod');
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
 const ClinicalAnalysisSchema = z.object({
-  conditionSeverity:    z.record(z.string(), z.string()),
+  conditionSeverity: z.record(z.string(), z.string()),
   dailyNutrientTargets: z.object({
-    calories:     z.number(),
+    calories: z.number(),
     proteinGrams: z.number(),
-    carbsGrams:   z.number(),
-    fatGrams:     z.number(),
-    sodiumMg:     z.number(),
-    fiberGrams:   z.number(),
+    carbsGrams: z.number(),
+    fatGrams: z.number(),
+    sodiumMg: z.number(),
+    fiberGrams: z.number(),
   }),
   dietaryPriorities: z.array(z.string()).max(5),
-  foodsToEmphasise:  z.array(z.string()).max(5),
-  foodsToAvoid:      z.array(z.string()).max(5),
-  mealTimingAdvice:  z.string(),
+  foodsToEmphasise: z.array(z.string()).max(5),
+  foodsToAvoid: z.array(z.string()).max(5),
+  mealTimingAdvice: z.string(),
   clinicalRationale: z.string(),
 });
 
 // LLM returns integer IDs per slot
 const DayIdPlanSchema = z.object({
-  day:       z.number().int().min(1).max(7),
+  day: z.number().int().min(1).max(7),
   breakfast: z.union([z.number().int().positive(), z.null()]),
-  lunch:     z.union([z.number().int().positive(), z.null()]),
-  dinner:    z.union([z.number().int().positive(), z.null()]),
-  snack:     z.union([z.number().int().positive(), z.null()]),
+  lunch: z.union([z.number().int().positive(), z.null()]),
+  dinner: z.union([z.number().int().positive(), z.null()]),
+  snack: z.union([z.number().int().positive(), z.null()]),
 });
 
 // After ID resolution, slots hold food names (strings)
 const DayNamePlanSchema = z.object({
-  day:       z.number().int().min(1).max(7),
+  day: z.number().int().min(1).max(7),
   breakfast: z.string().nullable(),
-  lunch:     z.string().nullable(),
-  dinner:    z.string().nullable(),
-  snack:     z.string().nullable(),
+  lunch: z.string().nullable(),
+  dinner: z.string().nullable(),
+  snack: z.string().nullable(),
 });
 
-const IdMealPlanSchema   = z.array(DayIdPlanSchema).length(7);
+const IdMealPlanSchema = z.array(DayIdPlanSchema).length(7);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,12 +64,12 @@ const extractJSON = (text) => {
     .replace(/\s*```\s*$/m, '')
     .trim();
 
-  const arrayMatch  = cleaned.match(/\[[\s\S]*\]/);
+  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
   const objectMatch = cleaned.match(/\{[\s\S]*\}/);
 
   if (cleaned.startsWith('[') && arrayMatch) return arrayMatch[0];
   if (objectMatch) return objectMatch[0];
-  if (arrayMatch)  return arrayMatch[0];
+  if (arrayMatch) return arrayMatch[0];
 
   throw new Error(`No JSON found in response. Raw (first 300 chars): ${cleaned.slice(0, 300)}`);
 };
@@ -81,14 +81,14 @@ const repairTruncatedJSON = (text) => {
   } catch {
     const stack = [];
     let inString = false;
-    let escape   = false;
+    let escape = false;
 
     for (const ch of text) {
-      if (escape)          { escape = false; continue; }
-      if (ch === '\\')     { escape = true;  continue; }
-      if (ch === '"')      { inString = !inString; continue; }
-      if (inString)        continue;
-      if (ch === '{')      stack.push('}');
+      if (escape) { escape = false; continue; }
+      if (ch === '\\') { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') stack.push('}');
       else if (ch === '[') stack.push(']');
       else if (ch === '}' || ch === ']') stack.pop();
     }
@@ -131,7 +131,7 @@ const fuzzyFindFood = (name, foodMap) => {
   for (const [key, food] of foodMap.entries()) {
     const kTokens = key.split(/\s+/);
     const matches = kTokens.filter((t) => qTokens.has(t)).length;
-    const score   = matches / Math.max(kTokens.length, qTokens.size);
+    const score = matches / Math.max(kTokens.length, qTokens.size);
     if (score > bestScore && score >= 0.6) { bestScore = score; best = food; }
   }
   return best;
@@ -146,14 +146,14 @@ const analyzeHealthProfileNode = async (state) => {
   const model = buildModel(0.1, 1024);
 
   const diseases = [
-    profile.isDiabetic       && 'Diabetes',
-    profile.isHypertensive   && 'Hypertension',
-    profile.isCardiac        && 'Cardiac Disease',
+    profile.isDiabetic && 'Diabetes',
+    profile.isHypertensive && 'Hypertension',
+    profile.isCardiac && 'Cardiac Disease',
     profile.hasKidneyDisease && 'Kidney Disease',
-    profile.hasThyroid       && 'Thyroid Disorder',
+    profile.hasThyroid && 'Thyroid Disorder',
   ].filter(Boolean).join(', ') || 'None';
 
-  const allergies   = profile.allergies?.length ? profile.allergies.join(', ') : 'None';
+  const allergies = profile.allergies?.length ? profile.allergies.join(', ') : 'None';
   const feedbackText = checkInFeedback ? JSON.stringify(checkInFeedback) : 'No previous check-in feedback';
 
   const prompt = `You are a board-certified clinical dietitian. Analyze this patient and return a clinical dietary assessment.
@@ -185,9 +185,9 @@ Return ONLY a raw JSON object — no markdown, no backticks, no explanation:
   "clinicalRationale": "1-2 sentence rationale"
 }`;
 
-  const response  = await model.invoke(prompt);
-  const raw       = extractJSON(response.content);
-  const repaired  = repairTruncatedJSON(raw);
+  const response = await model.invoke(prompt);
+  const raw = extractJSON(response.content);
+  const repaired = repairTruncatedJSON(raw);
   const validated = ClinicalAnalysisSchema.parse(JSON.parse(repaired));
 
   console.log('[LangGraph] ✔ ClinicalAnalysis complete:', JSON.stringify(validated.dailyNutrientTargets));
@@ -219,36 +219,37 @@ const generateMealPlanNode = async (state) => {
   const { profile, clinicalAnalysis, availableFoods, validationErrors } = state;
 
   // Build ID→food map and numbered catalogue
-  const idToFood  = {};
+  const idToFood = {};
   const catalogue = availableFoods.map((f, i) => {
     const id = i + 1;
     idToFood[id] = f;
 
     const safeFlags = [
-      f.is_diabetic_safe     && 'D',
+      f.is_diabetic_safe && 'D',
       f.is_hypertension_safe && 'H',
-      f.is_cardiac_safe      && 'C',
-      f.is_kidney_safe       && 'K',
-      f.is_thyroid_safe      && 'T',
+      f.is_cardiac_safe && 'C',
+      f.is_kidney_safe && 'K',
+      f.is_thyroid_safe && 'T',
     ].filter(Boolean).join('') || 'G';
 
     const mealTypes = (f.mealType || []).join(',');
     return `${id}|"${f.name}"|${f.calories}cal|PKR${Math.round(f.price)}|${mealTypes}|safe:${safeFlags}`;
   }).join('\n');
 
+  // NAYA:
   const budgets = {
     breakfast: Math.round(profile.dailyBudget * 0.25),
-    lunch:     Math.round(profile.dailyBudget * 0.35),
-    dinner:    Math.round(profile.dailyBudget * 0.30),
-    snack:     Math.round(profile.dailyBudget * 0.10),
+    lunch: Math.round(profile.dailyBudget * 0.35),
+    dinner: Math.round(profile.dailyBudget * 0.35),
+    snack: Math.round(profile.dailyBudget * 0.15),
   };
 
   const activeFlags = [
-    profile.isDiabetic       && 'D=Diabetes (ONLY IDs with safe:D)',
-    profile.isHypertensive   && 'H=Hypertension (ONLY IDs with safe:H)',
-    profile.isCardiac        && 'C=Cardiac (ONLY IDs with safe:C)',
+    profile.isDiabetic && 'D=Diabetes (ONLY IDs with safe:D)',
+    profile.isHypertensive && 'H=Hypertension (ONLY IDs with safe:H)',
+    profile.isCardiac && 'C=Cardiac (ONLY IDs with safe:C)',
     profile.hasKidneyDisease && 'K=Kidney Disease (ONLY IDs with safe:K)',
-    profile.hasThyroid       && 'T=Thyroid (ONLY IDs with safe:T)',
+    profile.hasThyroid && 'T=Thyroid (ONLY IDs with safe:T)',
   ].filter(Boolean).join(', ') || 'None — any food ID is acceptable';
 
   const errorSection = validationErrors?.length
@@ -284,12 +285,12 @@ Return ONLY a raw JSON array — no markdown, no backticks, no explanation:
   {"day":7,"breakfast":ID_or_null,"lunch":ID_or_null,"dinner":ID_or_null,"snack":ID_or_null}
 ]`;
 
-  const model    = buildModel(0.1, 4096);
+  const model = buildModel(0.1, 4096);
   const response = await model.invoke(prompt);
 
   let parsedIds;
   try {
-    const raw      = extractJSON(response.content);
+    const raw = extractJSON(response.content);
     const repaired = repairTruncatedJSON(raw);
     parsedIds = IdMealPlanSchema.parse(JSON.parse(repaired));
     console.log(`[LangGraph] ✔ GenerateMealPlan: received ${parsedIds.length} days of IDs`);
@@ -301,11 +302,11 @@ Return ONLY a raw JSON array — no markdown, no backticks, no explanation:
 
   // Resolve IDs → exact food names immediately — validator works with names
   const draftPlanParsed = parsedIds.map((day) => ({
-    day:       day.day,
+    day: day.day,
     breakfast: day.breakfast ? (idToFood[day.breakfast]?.name ?? null) : null,
-    lunch:     day.lunch     ? (idToFood[day.lunch]?.name     ?? null) : null,
-    dinner:    day.dinner    ? (idToFood[day.dinner]?.name    ?? null) : null,
-    snack:     day.snack     ? (idToFood[day.snack]?.name     ?? null) : null,
+    lunch: day.lunch ? (idToFood[day.lunch]?.name ?? null) : null,
+    dinner: day.dinner ? (idToFood[day.dinner]?.name ?? null) : null,
+    snack: day.snack ? (idToFood[day.snack]?.name ?? null) : null,
   }));
 
   console.log('[LangGraph] ✔ IDs resolved to exact food names');
@@ -331,11 +332,11 @@ const validatePlanNode = async (state) => {
   }
 
   const diseaseFlags = {
-    isDiabetic:       'is_diabetic_safe',
-    isHypertensive:   'is_hypertension_safe',
-    isCardiac:        'is_cardiac_safe',
+    isDiabetic: 'is_diabetic_safe',
+    isHypertensive: 'is_hypertension_safe',
+    isCardiac: 'is_cardiac_safe',
     hasKidneyDisease: 'is_kidney_safe',
-    hasThyroid:       'is_thyroid_safe',
+    hasThyroid: 'is_thyroid_safe',
   };
   const activeDiseases = Object.keys(diseaseFlags).filter((k) => profile[k]);
 
@@ -349,16 +350,17 @@ const validatePlanNode = async (state) => {
 
     const slots = {
       breakfast: dayObj.breakfast,
-      lunch:     dayObj.lunch,
-      dinner:    dayObj.dinner,
-      snack:     dayObj.snack,
+      lunch: dayObj.lunch,
+      dinner: dayObj.dinner,
+      snack: dayObj.snack,
     };
 
+    // NAYA:
     const budgets = {
       breakfast: profile.dailyBudget * 0.25,
-      lunch:     profile.dailyBudget * 0.35,
-      dinner:    profile.dailyBudget * 0.30,
-      snack:     profile.dailyBudget * 0.10,
+      lunch: profile.dailyBudget * 0.35,
+      dinner: profile.dailyBudget * 0.35,
+      snack: profile.dailyBudget * 0.15,
     };
 
     let dayCost = 0;
@@ -392,7 +394,7 @@ const validatePlanNode = async (state) => {
       }
 
       // Per-slot budget (15% tolerance)
-      if (food.price > budgets[slotName] * 1.15) {
+      if (food.price > budgets[slotName] * 1.30) {
         errors.push(
           `Day ${dayNum} ${slotName}: "${food.name}" PKR ${food.price} exceeds slot limit ~PKR ${Math.round(budgets[slotName])}.`
         );
@@ -424,11 +426,11 @@ const validatePlanNode = async (state) => {
       return fuzzy ? fuzzy.name : name;
     };
     return {
-      day:       dayObj.day,
+      day: dayObj.day,
       breakfast: resolve(dayObj.breakfast),
-      lunch:     resolve(dayObj.lunch),
-      dinner:    resolve(dayObj.dinner),
-      snack:     resolve(dayObj.snack),
+      lunch: resolve(dayObj.lunch),
+      dinner: resolve(dayObj.dinner),
+      snack: resolve(dayObj.snack),
     };
   });
 

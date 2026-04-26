@@ -42,6 +42,9 @@ const WEIGHT_CHANGE = [
   { value: 'gained',     label: 'Gained weight',     icon: TrendingUp },
 ]
 
+// Navbar h-16 = 64px (z-50). Modal z-[200] taake uske upar rahe.
+const NAVBAR_H = 64
+
 export default function WeeklyCheckIn({ progress, onRegenerate }) {
   const dispatch = useDispatch()
   const { submitting } = useSelector((s) => s.progress)
@@ -156,7 +159,6 @@ export default function WeeklyCheckIn({ progress, onRegenerate }) {
         Update your weight to get a more accurate calorie target next week
       </p>
 
-      {/* Weight change */}
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
         Did your weight change this week?
       </p>
@@ -178,7 +180,6 @@ export default function WeeklyCheckIn({ progress, onRegenerate }) {
         ))}
       </div>
 
-      {/* Current weight input */}
       <div className="mb-5">
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-2">
           Current weight (kg) <span className="font-normal text-slate-400">— optional but recommended</span>
@@ -199,7 +200,6 @@ export default function WeeklyCheckIn({ progress, onRegenerate }) {
         </p>
       </div>
 
-      {/* Energy level */}
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Energy level this week</p>
       <div className="grid grid-cols-5 gap-2 mb-5">
         {ENERGY_LEVELS.map((e) => (
@@ -219,7 +219,6 @@ export default function WeeklyCheckIn({ progress, onRegenerate }) {
         ))}
       </div>
 
-      {/* Digestive health */}
       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Digestive health</p>
       <div className="grid grid-cols-4 gap-2">
         {DIGESTION.map((d) => (
@@ -288,11 +287,17 @@ export default function WeeklyCheckIn({ progress, onRegenerate }) {
   const isLast = step === TOTAL - 1
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
+    // z-[200] — navbar (z-50) se upar, LocationModal se same level
+    // paddingTop = navbar height + 16px gap taake modal navbar se neeche start ho
+    // overflow-y-auto on overlay taake scroll kaam kare
+    <div
+      className="fixed inset-0 bg-black/70 z-[200] flex justify-center backdrop-blur-sm overflow-y-auto"
+      style={{ paddingTop: `${NAVBAR_H + 16}px`, paddingBottom: '24px' }}
+    >
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md h-fit animate-slide-up mx-4 flex flex-col">
 
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-slate-900 rounded-t-3xl px-6 pt-6 pb-3 border-b border-slate-100 dark:border-slate-800 z-10">
+        {/* Header — sticky inside modal */}
+        <div className="sticky top-0 bg-white dark:bg-slate-900 rounded-t-3xl px-6 pt-6 pb-3 border-b border-slate-100 dark:border-slate-800 z-10 flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-slate-400">
               Week {weekStats.weekNumber} Check-In · {step + 1}/{TOTAL}
@@ -317,13 +322,13 @@ export default function WeeklyCheckIn({ progress, onRegenerate }) {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-5">
+        {/* Content — scrolls naturally with overlay */}
+        <div className="px-6 py-5 flex-1">
           {STEP_RENDERERS[step]?.()}
         </div>
 
-        {/* Navigation */}
-        <div className="sticky bottom-0 bg-white dark:bg-slate-900 rounded-b-3xl px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+        {/* Navigation — sticky at bottom of modal card */}
+        <div className="sticky bottom-0 bg-white dark:bg-slate-900 rounded-b-3xl px-6 pb-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
           <div className="flex gap-3">
             {step > 0 && (
               <button

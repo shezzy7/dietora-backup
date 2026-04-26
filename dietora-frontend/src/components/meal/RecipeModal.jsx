@@ -29,7 +29,7 @@ export default function RecipeModal({ isOpen, onClose, foodId, foodName }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/60 z-[70] backdrop-blur-sm transition-opacity" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-900 z-[80] shadow-2xl animate-slide-left overflow-y-auto border-l border-slate-200 dark:border-slate-800">
+      <div className="fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-md bg-white dark:bg-slate-900 z-[80] shadow-2xl animate-slide-left overflow-y-auto border-l border-slate-200 dark:border-slate-800">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
